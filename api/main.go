@@ -9,12 +9,12 @@ import (
 )
 
 func main() {
-	http.HandleFunc("/upload", handleUpload)
+	http.HandleFunc("/upload", uploadHandler)
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-func handleUpload(w http.ResponseWriter, r *http.Request) {
+func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		w.WriteHeader(405)
 		w.Write([]byte("Method Not Allowed"))
