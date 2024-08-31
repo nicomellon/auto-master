@@ -1,6 +1,6 @@
 FROM golang AS builder
 WORKDIR /app
-COPY ./src .
+COPY ./api .
 RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 FROM alpine
