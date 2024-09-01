@@ -1,59 +1,59 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/go-audio/audiotools"
-	"io"
 	"log"
 	"net/http"
-	"os"
+
+	"github.com/nicomellon/auto-master/services"
 )
+
+type ResponseBody struct {
+	Data   *Resource `json:"data,omitempty"`
+	Errors []Error   `json:"errors,omitempty"`
+}
+
+type Resource struct {
+	ID   string `json:"id"`
+	Type string `json:"type"`
+}
+
+type Error struct {
+	Detail string `json:"detail"`
+}
 
 func main() {
 	http.HandleFunc("/upload", uploadHandler)
-
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/vnd.api+json")
 	if r.Method != "POST" {
+		payload := ResponseBody{nil, []Error{Error{"Method not allowed"}}}
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		w.Write([]byte("Method Not Allowed"))
+		json.NewEncoder(w).Encode(payload)
 		return
 	}
-
-	file, fileHeader, err := r.FormFile("file")
+	file, _, err := r.FormFile("file")
 	if err != nil {
+		payload := ResponseBody{nil, []Error{Error{"No file in request body"}}}
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("No file in request body"))
+		json.NewEncoder(w).Encode(payload)
 		return
 	}
 
-	fileContent, err := io.ReadAll(file)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error reading file"))
-		return
+	uploadService := services.NewUploadService()
+	var payload ResponseBody
+	var status int
+	if id, err := uploadService.Upload(file); err != nil {
+		payload = ResponseBody{nil, []Error{Error{fmt.Sprint(err)}}}
+		status = http.StatusBadRequest
+	} else {
+		payload = ResponseBody{&Resource{id, "uploads"}, nil}
+		status = http.StatusCreated
 	}
-
-	format, err := audiotools.HeaderFormat(fileContent)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error reading file format"))
-		return
-	}
-
-	if format == "unknown" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Invalid file format"))
-		return
-	}
-
-	err2 := os.WriteFile(fmt.Sprintf("./%s", fileHeader.Filename), fileContent, 0666)
-	if err2 != nil {
-		log.Fatal(err2)
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("Uploaded"))
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(payload)
 }
