@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/go-audio/audiotools"
 	"io"
 	"log"
 	"net/http"
@@ -16,48 +17,43 @@ func main() {
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
-		w.WriteHeader(405)
+		w.WriteHeader(http.StatusMethodNotAllowed)
 		w.Write([]byte("Method Not Allowed"))
 		return
 	}
 
-	err := r.ParseMultipartForm(1064)
+	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		w.WriteHeader(400)
-		w.Write([]byte("Error parsing request body"))
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("No file in request body"))
 		return
 	}
 
-	fileHeaders, fileFieldIncluded := r.MultipartForm.File["file"]
-	if !fileFieldIncluded {
-		w.WriteHeader(400)
-		w.Write([]byte("Missing file field in form data"))
+	fileContent, err := io.ReadAll(file)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error reading file"))
 		return
 	}
 
-	for _, fileHeader := range fileHeaders {
-		file, err := fileHeader.Open()
-		if err != nil {
-			w.WriteHeader(500)
-			w.Write([]byte("Error opening file"))
-			return
-		}
-		defer file.Close()
-
-		fileContent, err := io.ReadAll(file)
-		if err != nil {
-			w.WriteHeader(500)
-			w.Write([]byte("Error reading file"))
-			return
-		}
-
-		err2 := os.WriteFile(fmt.Sprintf("./%s", fileHeader.Filename), fileContent, 0666)
-		if err2 != nil {
-			log.Fatal(err)
-		}
-
+	format, err := audiotools.HeaderFormat(fileContent)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error reading file format"))
+		return
 	}
 
-	w.WriteHeader(201)
+	if format == "unknown" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Invalid file format"))
+		return
+	}
+
+	err2 := os.WriteFile(fmt.Sprintf("./%s", fileHeader.Filename), fileContent, 0666)
+	if err2 != nil {
+		log.Fatal(err2)
+	}
+
+	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("Uploaded"))
 }
