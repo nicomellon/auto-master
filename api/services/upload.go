@@ -1,11 +1,9 @@
 package services
 
 import (
-	"errors"
 	"io"
 
-	"github.com/go-audio/audiotools"
-	"github.com/google/uuid"
+	"github.com/nicomellon/auto-master/domain"
 )
 
 type UploadService struct{}
@@ -14,17 +12,10 @@ func NewUploadService() *UploadService {
 	return &UploadService{}
 }
 
-func (s *UploadService) Upload(file io.Reader) (string, error) {
-	fileContent, err := io.ReadAll(file)
+func (s *UploadService) Upload(file io.Reader) (*domain.Track, error) {
+	track, err := domain.NewTrack(file)
 	if err != nil {
-		return "", errors.New("Error reading file")
+		return nil, err
 	}
-	format, err := audiotools.HeaderFormat(fileContent)
-	if err != nil {
-		return "", errors.New("Error reading file format")
-	}
-	if format == "unknown" {
-		return "", errors.New("Invalid file format")
-	}
-	return uuid.NewString(), nil
+	return track, nil
 }

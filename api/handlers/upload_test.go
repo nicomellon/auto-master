@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ func TestUploadWithBadHttpMethod(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/upload", nil)
 	w := httptest.NewRecorder()
 
-	uploadHandler(w, req)
+	UploadHandler(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
@@ -29,7 +29,7 @@ func TestUploadWithoutRequestBody(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/upload", nil)
 	w := httptest.NewRecorder()
 
-	uploadHandler(w, req)
+	UploadHandler(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusBadRequest {
@@ -54,7 +54,7 @@ func TestUploadWithInvalidFileFormat(t *testing.T) {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 
-	uploadHandler(w, req)
+	UploadHandler(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusBadRequest {
@@ -108,7 +108,7 @@ func TestUploadWithValidAudioFile(t *testing.T) {
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 	w := httptest.NewRecorder()
 
-	uploadHandler(w, req)
+	UploadHandler(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusCreated {
