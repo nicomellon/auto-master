@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
@@ -24,12 +24,6 @@ type Error struct {
 
 func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/vnd.api+json")
-	if r.Method != "POST" {
-		payload := Document{nil, []Error{Error{"Method not allowed"}}}
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		json.NewEncoder(w).Encode(payload)
-		return
-	}
 	file, _, err := r.FormFile("file")
 	if err != nil {
 		payload := Document{nil, []Error{Error{"No file in request body"}}}
@@ -39,15 +33,16 @@ func UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uploadService := services.NewUploadService()
-	var payload Document
-	var status int
-	if track, err := uploadService.Upload(file); err != nil {
-		payload = Document{nil, []Error{Error{fmt.Sprint(err)}}}
-		status = http.StatusBadRequest
-	} else {
-		payload = Document{&Resource{track.ID.String(), "uploads"}, nil}
-		status = http.StatusCreated
+	track, err := uploadService.Upload(file)
+	if err != nil {
+		payload := Document{nil, []Error{Error{fmt.Sprint(err)}}}
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(payload)
+		return
 	}
-	w.WriteHeader(status)
+
+	payload := Document{&Resource{track.ID.String(), "uploads"}, nil}
+	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(payload)
 }

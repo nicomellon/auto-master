@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"bytes"
@@ -12,18 +12,6 @@ import (
 	"github.com/go-audio/audio"
 	"github.com/go-audio/wav"
 )
-
-func TestUploadWithBadHttpMethod(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/upload", nil)
-	w := httptest.NewRecorder()
-
-	UploadHandler(w, req)
-
-	resp := w.Result()
-	if resp.StatusCode != http.StatusMethodNotAllowed {
-		t.Fatalf("Expected status code %d, got %d", http.StatusMethodNotAllowed, resp.StatusCode)
-	}
-}
 
 func TestUploadWithoutRequestBody(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/upload", nil)

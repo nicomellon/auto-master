@@ -1,13 +1,22 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 
-	"github.com/nicomellon/auto-master/handlers"
+	"github.com/nicomellon/auto-master/handler"
+	"github.com/nicomellon/auto-master/middleware"
 )
 
 func main() {
-	http.HandleFunc("/upload", handlers.UploadHandler)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	router := http.NewServeMux()
+	router.HandleFunc("POST /upload", handler.UploadHandler)
+
+	server := http.Server{
+		Addr:    ":8080",
+		Handler: middleware.Logging(router),
+	}
+
+	fmt.Println("Server listening on port", server.Addr)
+	server.ListenAndServe()
 }
