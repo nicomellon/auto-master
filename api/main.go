@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/nicomellon/auto-master/handler"
@@ -18,5 +19,5 @@ func main() {
 	}
 
 	fmt.Println("Server listening on port", server.Addr)
-	server.ListenAndServe()
+	log.Fatal(server.ListenAndServe())
 }
